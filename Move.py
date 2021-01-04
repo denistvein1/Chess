@@ -17,14 +17,13 @@ class Move:
     def __init__(self, board: Board):
         self.__board = board
         self.__color_turn = "white"
-        self.__draw = False
-        self.__set_attacked = False
-        self.is_passant = False
-        self.passant_coordinate = None
-        self.passant = None
-
-        self.__draw_temp = False
-        self.passant_temp = False
+        self.__is_draw = False
+        self.__is_draw_temp = False
+        self.__attacked_pieces_were_set = False
+        self.__last_move_was_en_passant = False
+        self.__en_passant_coordinate = None
+        self.__en_passant_coordinate_temp_1 = None
+        self.__en_passant_coordinate_temp_2 = None
 
     @property
     def board(self) -> Board:
@@ -39,12 +38,60 @@ class Move:
         self.__color_turn = color
 
     @property
-    def draw(self) -> bool:
-        return self.__draw
+    def is_draw(self) -> bool:
+        return self.__is_draw
 
-    @draw.setter
-    def draw(self, draw: bool) -> None:
-        self.__draw = draw
+    @is_draw.setter
+    def is_draw(self, draw: bool) -> None:
+        self.__is_draw = draw
+
+    @property
+    def is_draw_temp(self) -> bool:
+        return self.__is_draw_temp
+
+    @is_draw.setter
+    def is_draw(self, is_draw_temp: bool) -> None:
+        self.__is_draw_temp = is_draw_temp
+
+    @property
+    def attacked_pieces_were_set(self) -> bool:
+        return self.__attacked_pieces_were_set
+
+    @attacked_pieces_were_set.setter
+    def attacked_pieces_were_set(self, attacked_pieces_were_set: bool) -> None:
+        self.__attacked_pieces_were_set = attacked_pieces_were_set
+
+    @property
+    def last_move_was_en_passant(self) -> bool:
+        return self.__last_move_was_en_passant
+
+    @last_move_was_en_passant.setter
+    def last_move_was_en_passant(self, last_move_was_en_passant: bool) -> None:
+        self.__last_move_was_en_passant = last_move_was_en_passant
+
+    @property
+    def en_passant_coordinate(self) -> tuple:
+        return self.__en_passant_coordinate
+
+    @en_passant_coordinate.setter
+    def en_passant_coordinate(self, en_passant_coordinate: tuple) -> None:
+        self.__en_passant_coordinate = en_passant_coordinate
+
+    @property
+    def en_passant_coordinate_temp_1(self) -> tuple:
+        return self.__en_passant_coordinate_temp_1
+
+    @en_passant_coordinate_temp_1.setter
+    def en_passant_coordinate_temp_1(self, en_passant_coordinate_temp_1: tuple) -> None:
+        self.__en_passant_coordinate_temp_1 = en_passant_coordinate_temp_1
+
+    @property
+    def en_passant_coordinate_temp_2(self) -> tuple:
+        return self.__en_passant_coordinate_temp_2
+
+    @en_passant_coordinate_temp_2.setter
+    def en_passant_coordinate_temp_2(self, en_passant_coordinate_temp_2: tuple) -> None:
+        self.__en_passant_coordinate_temp_2 = en_passant_coordinate_temp_2
 
     def __can_move(self, coordinate: tuple) -> bool:
         """
@@ -54,44 +101,40 @@ class Move:
         :param coordinate: (x, y) with x and y between 0 and 7.
         :return: bool.
         """
-        if self.__board.is_piece(coordinate):
-            piece = self.__board.get_piece(coordinate)
+        if self.board.is_piece(coordinate):
+            piece = self.board.get_piece(coordinate)
             if piece.piece_color == self.color_turn:
                 return True
         return False
 
     def en_passant_helper2(self, coordinate: tuple, piece: Piece) -> list:
         en_passant_moves = list()
-        pawn = self.__board.get_piece(coordinate)
-        color = pawn.piece_color
-        x, y = self.__board.get_coordinate(piece)
-        opposite_color = {coordinate: "white" if pawn.piece_color == "black" else "black"}
+        color = self.board.get_piece(coordinate).piece_color
+        x, y = self.board.get_coordinate(piece)
+        opposite_color = {coordinate: "white" if color == "black" else "black"}
         pos = {"white": (1, 2), "black": (-1, -2)}
         if piece.piece_type == 'p' and piece.piece_color == opposite_color[coordinate]:
-            previous_position = self.__board.all_positions[len(self.__board.all_positions) - 2]
+            previous_position = self.board.all_positions[len(self.board.all_positions) - 2]
             for p in previous_position:
-                try:
-                    if p[1] == (x + pos[color][1], y) and p[0].piece_type == piece.piece_type and p[0].piece_color == piece.piece_color:
-                        if self.__board.is_piece((x + pos[color][1], y)):
-                            temp = self.__board.get_piece((x + pos[color][1], y))
-                            if temp.piece_type != piece.piece_type or temp.piece_color != piece.piece_color:
-                                en_passant_moves.append((x + pos[color][0], y))
-                        else:
+                if p[1] == (x + pos[color][1], y) and p[0].piece_type == piece.piece_type and p[0].piece_color == piece.piece_color:
+                    if self.board.is_piece((x + pos[color][1], y)):
+                        temp = self.board.get_piece((x + pos[color][1], y))
+                        if temp.piece_type != piece.piece_type or temp.piece_color != piece.piece_color:
                             en_passant_moves.append((x + pos[color][0], y))
-                except ValueError:
-                    pass
+                    else:
+                        en_passant_moves.append((x + pos[color][0], y))
         return en_passant_moves
 
     def en_passant_helper1(self, coordinate: tuple) -> list:
         x, y = coordinate
         if y <= 6:
-            if self.__board.is_piece((x, y + 1)):
-                piece = self.__board.get_piece((x, y + 1))
+            if self.board.is_piece((x, y + 1)):
+                piece = self.board.get_piece((x, y + 1))
                 return self.en_passant_helper2(coordinate, piece)
 
         if y >= 1:
-            if self.__board.is_piece((x, y - 1)):
-                piece = self.__board.get_piece((x, y - 1))
+            if self.board.is_piece((x, y - 1)):
+                piece = self.board.get_piece((x, y - 1))
                 return self.en_passant_helper2(coordinate, piece)
         return []
 
@@ -108,71 +151,84 @@ class Move:
         """
         all_possible_moves = list()
         move_options_list = list()
-        piece = self.__board.get_piece(coordinate)
+        attacking_moves_list = list()
+        color = self.board.get_piece(coordinate).piece_color
         x, y = coordinate
-        if len(self.en_passant(coordinate)) and self.__set_attacked is True:
-            if self.color_turn == "white":
-                self.passant = (self.en_passant(coordinate)[0][0] - 1, self.en_passant(coordinate)[0][1])
-            elif self.color_turn == "black":
-                self.passant = (self.en_passant(coordinate)[0][0] + 1, self.en_passant(coordinate)[0][1])
-            all_possible_moves = self.en_passant(coordinate)
+        en_passant = self.en_passant(coordinate)
+        if len(en_passant) and self.__attacked_pieces_were_set is True:
+            if color == "white":
+                self.en_passant_coordinate = (en_passant[0][0] - 1, en_passant[0][1])
+            elif color == "black":
+                self.en_passant_coordinate = (en_passant[0][0] + 1, en_passant[0][1])
+            all_possible_moves = en_passant
             move_options_list = self.en_passant(coordinate)
-        if self.color_turn == "white":
+        if color == "white":
             if 1 <= x <= 6:
                 all_possible_moves.append((x + 1, y))
                 if x == 1:
                     all_possible_moves.append((x + 2, y))
-                if not self.__board.is_piece((x + 1, y)):
+                if not self.board.is_piece((x + 1, y)):
                     move_options_list.append((x + 1, y))
-                    if x == 1 and not self.__board.is_piece((x + 2, y)):
+                    if x == 1 and not self.board.is_piece((x + 2, y)):
                         move_options_list.append((x + 2, y))
-                if 7 >= y >= 1 and self.__board.is_piece((x + 1, y - 1)):
-                    all_possible_moves.append((x + 1, y - 1))
-                    if same_color:
-                        move_options_list.append((x + 1, y - 1))
-                    elif self.__board.get_piece((x + 1, y - 1)).piece_color != piece.piece_color:
-                        move_options_list.append((x + 1, y - 1))
-                if 0 <= y <= 6 and self.__board.is_piece((x + 1, y + 1)):
-                    all_possible_moves.append((x + 1, y + 1))
-                    if same_color:
-                        move_options_list.append((x + 1, y + 1))
-                    elif self.__board.get_piece((x + 1, y + 1)).piece_color != piece.piece_color:
-                        move_options_list.append((x + 1, y + 1))
+                if 7 >= y >= 1:
+                    attacking_moves_list.append((x + 1, y - 1))
+                    if self.board.is_piece((x + 1, y - 1)):
+                        all_possible_moves.append((x + 1, y - 1))
+                        if same_color:
+                            move_options_list.append((x + 1, y - 1))
+                        elif self.board.get_piece((x + 1, y - 1)).piece_color != color:
+                            move_options_list.append((x + 1, y - 1))
+                if 0 <= y <= 6:
+                    attacking_moves_list.append((x + 1, y + 1))
+                    if self.board.is_piece((x + 1, y + 1)):
+                        all_possible_moves.append((x + 1, y + 1))
+                        if same_color:
+                            move_options_list.append((x + 1, y + 1))
+                        elif self.board.get_piece((x + 1, y + 1)).piece_color != color:
+                            move_options_list.append((x + 1, y + 1))
         else:
             if 1 <= x <= 6:
                 all_possible_moves.append((x - 1, y))
                 if x == 6:
                     all_possible_moves.append((x - 2, y))
-                if not self.__board.is_piece((x - 1, y)):
+                if not self.board.is_piece((x - 1, y)):
                     move_options_list.append((x - 1, y))
-                    if x == 6 and not self.__board.is_piece((x - 2, y)):
+                    if x == 6 and not self.board.is_piece((x - 2, y)):
                         move_options_list.append((x - 2, y))
-                if 7 >= y >= 1 and self.__board.is_piece((x - 1, y - 1)):
-                    all_possible_moves.append((x - 1, y - 1))
-                    if same_color:
-                        move_options_list.append((x - 1, y - 1))
-                    elif self.__board.get_piece((x - 1, y - 1)).piece_color != piece.piece_color:
-                        move_options_list.append((x - 1, y - 1))
-                if 0 <= y <= 6 and self.__board.is_piece((x - 1, y + 1)):
-                    all_possible_moves.append((x - 1, y + 1))
-                    if same_color:
-                        move_options_list.append((x - 1, y + 1))
-                    elif self.__board.get_piece((x - 1, y + 1)).piece_color != piece.piece_color:
-                        move_options_list.append((x - 1, y + 1))
+                if 7 >= y >= 1:
+                    attacking_moves_list.append((x - 1, y - 1))
+                    if self.board.is_piece((x - 1, y - 1)):
+                        all_possible_moves.append((x - 1, y - 1))
+                        if same_color:
+                            move_options_list.append((x - 1, y - 1))
+                        elif self.board.get_piece((x - 1, y - 1)).piece_color != color:
+                            move_options_list.append((x - 1, y - 1))
+                if 0 <= y <= 6:
+                    attacking_moves_list.append((x - 1, y + 1))
+                    if self.board.is_piece((x - 1, y + 1)):
+                        all_possible_moves.append((x - 1, y + 1))
+                        if same_color:
+                            move_options_list.append((x - 1, y + 1))
+                        elif self.board.get_piece((x - 1, y + 1)).piece_color != color:
+                            move_options_list.append((x - 1, y + 1))
 
-        return move_options_list, all_possible_moves
+        return move_options_list, all_possible_moves, attacking_moves_list
 
     def __can_promote(self, coordinate: tuple, new_coordinate: tuple) -> bool:
-        return new_coordinate[0] in [0, 7] and new_coordinate in self.__move_pawn_options(coordinate)[0]
+        if self.board.get_piece(coordinate).piece_type == 'p':
+            return new_coordinate[0] in [0, 7] and new_coordinate in self.__move_pawn_options(coordinate)[0]
+        return False
 
     def __promote(self, coordinate: tuple, new_coordinate: tuple) -> None:
-        self.__board.remove_piece(coordinate)
-        self.__board.place_piece(new_coordinate, Piece("queen", 'q', self.color_turn, True))
+        color = self.board.get_piece(coordinate).piece_color
+        self.board.remove_piece(coordinate)
+        self.board.place_piece(new_coordinate, Piece("queen", 'q', color, True))
 
     def __move_knight_options(self, coordinate: tuple, same_color: bool = False) -> tuple:
         move_options_list = list()
         all_possible_moves = list()
-        piece = self.__board.get_piece(coordinate)
+        color = self.board.get_piece(coordinate).piece_color
         x, y = coordinate
         for i in range(-2, 3):
             for j in range(-2, 3):
@@ -183,7 +239,7 @@ class Move:
                             move_options_list.append((x + i, y + j))
                         else:
                             try:
-                                if not self.__board.is_piece((x + i, y + j)) or self.__board.is_piece((x + i, y + j)) and self.__board.get_piece((x + i, y + j)).piece_color != piece.piece_color:
+                                if not self.board.is_piece((x + i, y + j)) or self.board.is_piece((x + i, y + j)) and self.board.get_piece((x + i, y + j)).piece_color != color:
                                     move_options_list.append((x + i, y + j))
                             except IndexError:
                                 pass
@@ -192,7 +248,7 @@ class Move:
     def __move_bishop_options(self, coordinate: tuple, same_color: bool = False) -> tuple:
         move_options_list = list()
         all_possible_moves = list()
-        piece = self.__board.get_piece(coordinate)
+        color = self.board.get_piece(coordinate).piece_color
         x, y = coordinate
         up_left = up_right = down_left = down_right = True
         for i in range(1, 8):
@@ -200,12 +256,12 @@ class Move:
                 all_possible_moves.append((x + i, y + i))
                 try:
                     if up_right:
-                        if not self.__board.is_piece((x + i, y + i)):
+                        if not self.board.is_piece((x + i, y + i)):
                             move_options_list.append((x + i, y + i))
                         else:
                             if same_color:
                                 move_options_list.append((x + i, y + i))
-                            elif self.__board.get_piece((x + i, y + i)).piece_color != piece.piece_color:
+                            elif self.board.get_piece((x + i, y + i)).piece_color != color:
                                 move_options_list.append((x + i, y + i))
                             up_right = False
                 except IndexError:
@@ -214,12 +270,12 @@ class Move:
                 all_possible_moves.append((x - i, y - i))
                 try:
                     if down_left:
-                        if not self.__board.is_piece((x - i, y - i)):
+                        if not self.board.is_piece((x - i, y - i)):
                             move_options_list.append((x - i, y - i))
                         else:
                             if same_color:
                                 move_options_list.append((x - i, y - i))
-                            elif self.__board.get_piece((x - i, y - i)).piece_color != piece.piece_color:
+                            elif self.board.get_piece((x - i, y - i)).piece_color != color:
                                 move_options_list.append((x - i, y - i))
                             down_left = False
                 except IndexError:
@@ -228,12 +284,12 @@ class Move:
                 all_possible_moves.append((x + i, y - i))
                 try:
                     if up_left:
-                        if not self.__board.is_piece((x + i, y - i)):
+                        if not self.board.is_piece((x + i, y - i)):
                             move_options_list.append((x + i, y - i))
                         else:
                             if same_color:
                                 move_options_list.append((x + i, y - i))
-                            elif self.__board.get_piece((x + i, y - i)).piece_color != piece.piece_color:
+                            elif self.board.get_piece((x + i, y - i)).piece_color != color:
                                 move_options_list.append((x + i, y - i))
                             up_left = False
                 except IndexError:
@@ -242,12 +298,12 @@ class Move:
                 all_possible_moves.append((x - i, y + i))
                 try:
                     if down_right:
-                        if not self.__board.is_piece((x - i, y + i)):
+                        if not self.board.is_piece((x - i, y + i)):
                             move_options_list.append((x - i, y + i))
                         else:
                             if same_color:
                                 move_options_list.append((x - i, y + i))
-                            elif self.__board.get_piece((x - i, y + i)).piece_color != piece.piece_color:
+                            elif self.board.get_piece((x - i, y + i)).piece_color != color:
                                 move_options_list.append((x - i, y + i))
                             down_right = False
                 except IndexError:
@@ -258,7 +314,7 @@ class Move:
     def __move_rook_options(self, coordinate: tuple, same_color: bool = False) -> tuple:
         move_options_list = list()
         all_possible_moves = list()
-        piece = self.__board.get_piece(coordinate)
+        color = self.board.get_piece(coordinate).piece_color
         x, y = coordinate
         up = down = left = right = True
         for i in range(1, 8):
@@ -266,12 +322,12 @@ class Move:
                 all_possible_moves.append((x + i, y))
                 try:
                     if up:
-                        if not self.__board.is_piece((x + i, y)):
+                        if not self.board.is_piece((x + i, y)):
                             move_options_list.append((x + i, y))
                         else:
                             if same_color:
                                 move_options_list.append((x + i, y))
-                            elif self.__board.get_piece((x + i, y)).piece_color != piece.piece_color:
+                            elif self.board.get_piece((x + i, y)).piece_color != color:
                                 move_options_list.append((x + i, y))
                             up = False
                 except IndexError:
@@ -280,12 +336,12 @@ class Move:
                 all_possible_moves.append((x - i, y))
                 try:
                     if down:
-                        if not self.__board.is_piece((x - i, y)):
+                        if not self.board.is_piece((x - i, y)):
                             move_options_list.append((x - i, y))
                         else:
                             if same_color:
                                 move_options_list.append((x - i, y))
-                            elif self.__board.get_piece((x - i, y)).piece_color != piece.piece_color:
+                            elif self.board.get_piece((x - i, y)).piece_color != color:
                                 move_options_list.append((x - i, y))
                             down = False
                 except IndexError:
@@ -294,12 +350,12 @@ class Move:
                 all_possible_moves.append((x, y + i))
                 try:
                     if right:
-                        if not self.__board.is_piece((x, y + i)):
+                        if not self.board.is_piece((x, y + i)):
                             move_options_list.append((x, y + i))
                         else:
                             if same_color:
                                 move_options_list.append((x, y + i))
-                            elif self.__board.get_piece((x, y + i)).piece_color != piece.piece_color:
+                            elif self.board.get_piece((x, y + i)).piece_color != color:
                                 move_options_list.append((x, y + i))
                             right = False
                 except IndexError:
@@ -308,12 +364,12 @@ class Move:
                 all_possible_moves.append((x, y - i))
                 try:
                     if left:
-                        if not self.__board.is_piece((x, y - i)):
+                        if not self.board.is_piece((x, y - i)):
                             move_options_list.append((x, y - i))
                         else:
                             if same_color:
                                 move_options_list.append((x, y - i))
-                            elif self.__board.get_piece((x, y - i)).piece_color != piece.piece_color:
+                            elif self.board.get_piece((x, y - i)).piece_color != color:
                                 move_options_list.append((x, y - i))
                             left = False
                 except IndexError:
@@ -327,7 +383,7 @@ class Move:
     def __move_king_options(self, coordinate: tuple, consider_castle: bool = True, same_color: bool = False) -> tuple:
         move_options_list = list()
         all_possible_moves = list()
-        piece = self.__board.get_piece(coordinate)
+        color = self.board.get_piece(coordinate).piece_color
         x, y = coordinate
         for i in range(-1, 2):
             for j in range(-1, 2):
@@ -338,7 +394,7 @@ class Move:
                             move_options_list.append((x + i, y + j))
                         else:
                             try:
-                                if not self.__board.is_piece((x + i, y + j)) or self.__board.is_piece((x + i, y + j)) and self.__board.get_piece((x + i, y + j)).piece_color != piece.piece_color:
+                                if not self.board.is_piece((x + i, y + j)) or self.board.is_piece((x + i, y + j)) and self.board.get_piece((x + i, y + j)).piece_color != color:
                                     move_options_list.append((x + i, y + j))
                             except IndexError:
                                 pass
@@ -347,24 +403,24 @@ class Move:
         return move_options_list, all_possible_moves
 
     def is_protected(self, coordinate: tuple) -> bool:
-        piece = self.__board.get_piece(coordinate)
-        for p in self.__board.get_pieces(piece.piece_color):
-            if coordinate in self.available_move_options(self.__board.get_coordinate(p), ignore_color=True, same_color=True):
+        piece = self.board.get_piece(coordinate)
+        for p in self.board.get_pieces(piece.piece_color):
+            if coordinate in self.available_move_options(self.board.get_coordinate(p), ignore_color=True, same_color=True):
                 return True
         return False
 
     def is_square_attacked(self, coordinate: tuple, color: str) -> bool:
         for i in range(8):
             for j in range(8):
-                if self.__board.is_piece((i, j)):
-                    piece = self.__board.get_piece((i, j))
+                if self.board.is_piece((i, j)):
+                    piece = self.board.get_piece((i, j))
                     if piece.piece_color == color and coordinate in self.available_move_options((i, j), ignore_color=True, consider_castle=False):
                         return True
         return False
 
     def enemy_pieces_have_vision(self, king: Piece, enemy_color: str) -> list:
         vision = ['', '']
-        x, y = self.__board.get_coordinate(king)
+        x, y = self.board.get_coordinate(king)
         for i in range(5, 7):
             if self.is_square_attacked((x, i), enemy_color):
                 vision[0] = 'K'
@@ -374,14 +430,14 @@ class Move:
         return vision
 
     def __castle_options(self, coordinate: tuple) -> list:
-        king = self.__board.get_piece(coordinate)
+        king = self.board.get_piece(coordinate)
         result = ['', '']
         if king.piece_type == 'K' and king.has_moved is False:
-            if not self.__board.get_piece((coordinate[0], 7)).has_moved:
-                if not self.__board.is_piece((coordinate[0], 5)) and not self.__board.is_piece((coordinate[0], 6)):
+            if not self.board.get_piece((coordinate[0], 7)).has_moved:
+                if not self.board.is_piece((coordinate[0], 5)) and not self.board.is_piece((coordinate[0], 6)):
                     result[0] = 'K'
-            if not self.__board.get_piece((coordinate[0], 0)).has_moved:
-                if not self.__board.is_piece((coordinate[0], 1)) and not self.__board.is_piece((coordinate[0], 2)) and not self.__board.is_piece((coordinate[0], 3)):
+            if not self.board.get_piece((coordinate[0], 0)).has_moved:
+                if not self.board.is_piece((coordinate[0], 1)) and not self.board.is_piece((coordinate[0], 2)) and not self.board.is_piece((coordinate[0], 3)):
                     result[1] = 'q'
         return result
 
@@ -389,8 +445,9 @@ class Move:
         if self.check():
             return []
         move_options_list = list()
-        piece = self.__board.get_piece(coordinate)
-        opposite_color = {coordinate: "white" if self.color_turn == "black" else "black"}
+        piece = self.board.get_piece(coordinate)
+        color = piece.piece_color
+        opposite_color = {coordinate: "white" if color == "black" else "black"}
         castle_options = self.__castle_options(coordinate)
         vision = self.enemy_pieces_have_vision(piece, opposite_color[coordinate])
         if castle_options[0] == 'K' and vision[0] == 'K':
@@ -408,22 +465,22 @@ class Move:
     def __castle(self, coordinate: tuple, new_coordinate: tuple) -> dict:
         moves = dict()
         if new_coordinate[1] == 1:
-            self.__board.update_piece_position(coordinate, (new_coordinate[0], 2))
+            self.board.update_piece_position(coordinate, (new_coordinate[0], 2))
             moves[coordinate] = (new_coordinate[0], 2)
         else:
-            self.__board.update_piece_position(coordinate, new_coordinate)
+            self.board.update_piece_position(coordinate, new_coordinate)
             moves[coordinate] = new_coordinate
         if new_coordinate[1] in [1, 2]:
-            self.__board.update_piece_position((coordinate[0], 0), (coordinate[0], 3))
+            self.board.update_piece_position((coordinate[0], 0), (coordinate[0], 3))
             moves[(coordinate[0], 0)] = (coordinate[0], 3)
         elif new_coordinate[1] == 6:
-            self.__board.update_piece_position((coordinate[0], 7), (coordinate[0], 5))
+            self.board.update_piece_position((coordinate[0], 7), (coordinate[0], 5))
             moves[(coordinate[0], 7)] = (coordinate[0], 5)
         return moves
 
     def __is_draw_by_insufficient_material(self):
-        white_pieces = self.__board.get_pieces("white")
-        black_pieces = self.__board.get_pieces("black")
+        white_pieces = self.board.get_pieces("white")
+        black_pieces = self.board.get_pieces("black")
         if len(white_pieces) <= 2 and len(black_pieces) <= 2:
             if len(white_pieces) == 1 and len(black_pieces) == 1:
                 return True
@@ -447,22 +504,22 @@ class Move:
 
     def draw_the_game(self) -> None:
         if self.__is_draw_by_insufficient_material():
-            self.draw = True
+            self.is_draw = True
 
     def __set_attacked_pieces_by(self, coordinate: tuple) -> None:
-        attacking_piece = self.__board.get_piece(coordinate)
+        attacking_piece = self.board.get_piece(coordinate)
         opposite_color = {coordinate: "white" if attacking_piece.piece_color == "black" else "black"}
         attacked_coordinates = self.available_move_options(coordinate, ignore_color=True)
         for coord in attacked_coordinates:
-            if self.__board.is_piece(coord) and self.__board.get_piece(coord).piece_color == opposite_color[coordinate]:
-                piece = self.__board.get_piece(coord)
+            if self.board.is_piece(coord) and self.board.get_piece(coord).piece_color == opposite_color[coordinate]:
+                piece = self.board.get_piece(coord)
                 piece.attacking_pieces = attacking_piece
 
     def set_attacked_pieces(self) -> None:
         for i in range(8):
             for j in range(8):
-                if self.__board.is_piece((i, j)):
-                    piece = self.__board.get_piece((i, j))
+                if self.board.is_piece((i, j)):
+                    piece = self.board.get_piece((i, j))
                     pieces = list()
                     for attacking_piece in piece.attacking_pieces:
                         pieces.append(attacking_piece)
@@ -470,14 +527,14 @@ class Move:
                         piece.remove_attacking_piece(p)
         for i in range(8):
             for j in range(8):
-                if self.__board.is_piece((i, j)):
+                if self.board.is_piece((i, j)):
                     self.__set_attacked_pieces_by((i, j))
 
     def check(self) -> str:
         for i in range(8):
             for j in range(8):
-                if self.__board.is_piece((i, j)):
-                    piece = self.__board.get_piece((i, j))
+                if self.board.is_piece((i, j)):
+                    piece = self.board.get_piece((i, j))
                     if piece.piece_type == 'K' and piece.attacking_pieces.keys():
                         return piece.piece_color
 
@@ -486,7 +543,7 @@ class Move:
         attacking_pieces = king.attacking_pieces.keys()
         for piece in attacking_pieces:
             candidate_moves = list()
-            attacking_moves = self.available_move_options(self.__board.get_coordinate(piece), ignore_color=True, option=1)
+            attacking_moves = self.available_move_options(self.board.get_coordinate(piece), ignore_color=True, option=1)
             for move in moves:
                 if move not in attacking_moves:
                     candidate_moves.append(move)
@@ -494,7 +551,7 @@ class Move:
                 good_moves += candidate_moves
             else:
                 good_moves = list(set(good_moves).intersection(set(candidate_moves)))
-        moves_place_king_check = self.moves_that_place_king_in_check(self.__board.get_coordinate(king))
+        moves_place_king_check = self.moves_that_place_king_in_check(self.board.get_coordinate(king))
         if len(moves_place_king_check):
             good_moves = list(set(good_moves).difference(set(moves_place_king_check)))
         return good_moves
@@ -506,13 +563,13 @@ class Move:
         for piece in attacking_pieces:
             candidate_moves = list()
             for move in available_moves:
-                if move in self.__board.get_path(self.__board.get_coordinate(king), self.__board.get_coordinate(piece)):
+                if move in self.board.get_path(self.board.get_coordinate(king), self.board.get_coordinate(piece)):
                     candidate_moves.append(move)
             if not len(good_moves):
                 good_moves += candidate_moves
             else:
                 good_moves = list(set(good_moves).intersection(set(candidate_moves)))
-        moves_place_king_check = self.moves_that_place_king_in_check(self.__board.get_coordinate(self.__board.get_piece(coordinate)))
+        moves_place_king_check = self.moves_that_place_king_in_check(self.board.get_coordinate(self.board.get_piece(coordinate)))
         if len(moves_place_king_check):
             good_moves = list(set(good_moves).difference(set(moves_place_king_check)))
         return good_moves
@@ -525,27 +582,27 @@ class Move:
         attacking_pieces = king.attacking_pieces.keys()
         for piece in attacking_pieces:
             candidate_moves = list()
-            if self.__board.get_coordinate(piece) in available_moves:
-                candidate_moves.append(self.__board.get_coordinate(piece))
+            if self.board.get_coordinate(piece) in available_moves:
+                candidate_moves.append(self.board.get_coordinate(piece))
             if not len(good_moves):
                 good_moves += candidate_moves
             else:
                 good_moves = list(set(good_moves).intersection(set(candidate_moves)))
-        moves_place_king_check = self.moves_that_place_king_in_check(self.__board.get_coordinate(self.__board.get_piece(coordinate)))
+        moves_place_king_check = self.moves_that_place_king_in_check(self.board.get_coordinate(self.board.get_piece(coordinate)))
         if len(moves_place_king_check):
             good_moves = list(set(good_moves).difference(set(moves_place_king_check)))
         return good_moves
 
     def check_options(self, coordinate: tuple) -> list:
         valid_moves = list()
-        piece = self.__board.get_piece(coordinate)
+        piece = self.board.get_piece(coordinate)
         available_moves = self.available_move_options(coordinate)
         if piece.piece_type == 'K' and piece.piece_color == self.check():
             valid_moves += self.get_coordinates_that_moves_king_out_of_check(piece, available_moves)
         elif piece.piece_color == self.check():
             for i in range(8):
                 for j in range(8):
-                    king = self.__board.get_piece((i, j))
+                    king = self.board.get_piece((i, j))
                     if king.piece_type == 'K' and king.piece_color == self.color_turn:
                         valid_moves += self.block_check(king, coordinate)
                         valid_moves += self.capture_checking_piece(king, coordinate)
@@ -555,30 +612,28 @@ class Move:
         in_check_moves = list()
         for i in range(8):
             for j in range(8):
-                piece = self.__board.get_piece((i, j))
-                if self.__board.is_piece((i, j)) and piece.piece_color != self.color_turn:
-                    candidate_moves = list()
-                    if self.is_protected((i, j)) and (i, j) in self.available_move_options(self.__board.get_coordinate(king), ignore_color=True):
-                        candidate_moves.append((i, j))
-                    for move in self.available_move_options((i, j), ignore_color=True):
-                        if move in self.available_move_options(self.__board.get_coordinate(king)):
-                            candidate_moves.append(move)
-                    if not len(in_check_moves):
-                        in_check_moves += candidate_moves
+                if self.board.is_piece((i, j)) and self.board.get_piece((i, j)).piece_color != self.color_turn:
+                    if self.board.get_piece((i, j)).piece_type == 'p':
+                        moves = self.available_move_options((i, j), ignore_color=True, option=2)
                     else:
-                        in_check_moves = list(set(in_check_moves).union(set(candidate_moves)))
-        return in_check_moves
+                        moves = self.available_move_options((i, j), ignore_color=True)
+                    if self.is_protected((i, j)) and (i, j) in self.available_move_options(self.board.get_coordinate(king)):
+                        in_check_moves.append((i, j))
+                    for move in self.available_move_options(self.board.get_coordinate(king), ignore_color=True):
+                        if move in moves:
+                            in_check_moves.append(move)
+        return list(set(in_check_moves))
 
     def all_possible_attacking_moves_check(self, king: Piece) -> list:
         in_check_moves = list()
         attacking_pieces = king.attacking_pieces.keys()
         for piece in attacking_pieces:
-            coordinate = self.__board.get_coordinate(piece)
+            coordinate = self.board.get_coordinate(piece)
             candidate_moves = list()
-            if self.is_protected(coordinate) and coordinate in self.available_move_options(self.__board.get_coordinate(king), ignore_color=True):
+            if self.is_protected(coordinate) and coordinate in self.available_move_options(self.board.get_coordinate(king), ignore_color=True):
                 candidate_moves.append(coordinate)
-            for move in self.available_move_options(self.__board.get_coordinate(piece), ignore_color=True, option=1):
-                if move in self.available_move_options(self.__board.get_coordinate(king)):
+            for move in self.available_move_options(self.board.get_coordinate(piece), ignore_color=True, option=1):
+                if move in self.available_move_options(self.board.get_coordinate(king)):
                     candidate_moves.append(move)
             if not len(in_check_moves):
                 in_check_moves += candidate_moves
@@ -589,29 +644,29 @@ class Move:
     def check_pinned_pieces(self, king: Piece, coordinate: tuple) -> list:
         for i in range(8):
             for j in range(8):
-                piece = self.__board.get_piece((i, j))
-                if self.__board.is_piece((i, j)) and piece.piece_color != self.color_turn and piece.piece_type not in ['p', 'k', 'K']:
-                    path = self.__board.get_path(self.__board.get_coordinate(king), (i, j))
+                piece = self.board.get_piece((i, j))
+                if self.board.is_piece((i, j)) and piece.piece_color != self.color_turn and piece.piece_type not in ['p', 'k', 'K']:
+                    path = self.board.get_path(self.board.get_coordinate(king), (i, j))
                     if coordinate in path:
                         for coord in path:
-                            if coordinate != coord and self.__board.is_piece(coord):
+                            if coordinate != coord and self.board.is_piece(coord):
                                 return []
                         moves = list()
                         if self.available_move_options(coordinate, ignore_color=True):
                             for move in self.available_move_options(coordinate, ignore_color=True):
-                                if self.__board.get_coordinate(king) in self.available_move_options((i, j), ignore_color=True, option=1):
+                                if self.board.get_coordinate(king) in self.available_move_options((i, j), ignore_color=True, option=1):
                                     if move not in path and move != (i, j):
                                         moves.append(move)
                         return moves
         return []
 
     def moves_that_place_king_in_check(self, coordinate: tuple) -> list:
-        piece = self.__board.get_piece(coordinate)
+        piece = self.board.get_piece(coordinate)
         king = None
         for i in range(8):
             for j in range(8):
-                if self.__board.get_piece((i, j)).piece_type == 'K' and self.__board.get_piece((i, j)).piece_color == self.color_turn:
-                    king = self.__board.get_piece((i, j))
+                if self.board.get_piece((i, j)).piece_type == 'K' and self.board.get_piece((i, j)).piece_color == self.color_turn:
+                    king = self.board.get_piece((i, j))
         if piece.piece_type == 'K':
             in_check_moves = list()
             in_check_moves += self.all_legal_moves_check(king)
@@ -626,7 +681,7 @@ class Move:
         if color:
             for i in range(8):
                 for j in range(8):
-                    if self.__board.is_piece((i, j)) and self.__board.get_piece((i, j)).piece_color == color:
+                    if self.board.is_piece((i, j)) and self.board.get_piece((i, j)).piece_color == color:
                         if len(self.check_options((i, j))):
                             return False
             return True
@@ -635,8 +690,8 @@ class Move:
     def can_pieces_move(self, color: str) -> bool:
         for i in range(8):
             for j in range(8):
-                if self.__board.is_piece((i, j)):
-                    piece = self.__board.get_piece((i, j))
+                if self.board.is_piece((i, j)):
+                    piece = self.board.get_piece((i, j))
                     if piece.piece_type != 'K' and piece.piece_color == color and len(self.available_move_options((i, j), ignore_color=True)):
                         return True
         return False
@@ -645,13 +700,13 @@ class Move:
         king = None
         for i in range(8):
             for j in range(8):
-                if self.__board.is_piece((i, j)):
-                    piece = self.__board.get_piece((i, j))
+                if self.board.is_piece((i, j)):
+                    piece = self.board.get_piece((i, j))
                     if piece.piece_color == self.color_turn and piece.piece_type == 'K':
                         king = piece
         if not self.check() and not self.can_pieces_move(self.color_turn):
-            moves1 = self.moves_that_place_king_in_check(self.__board.get_coordinate(king))
-            moves2 = self.available_move_options(self.__board.get_coordinate(king), ignore_color=True)
+            moves1 = self.moves_that_place_king_in_check(self.board.get_coordinate(king))
+            moves2 = self.available_move_options(self.board.get_coordinate(king), ignore_color=True)
             if len(set(moves1)) != len(set(moves2)):
                 return False
             for move in moves1:
@@ -664,13 +719,13 @@ class Move:
         return False
 
     def save_position(self) -> None:
-        self.__board.save_position()
+        self.board.save_position()
 
     def three_fold_repetition(self) -> bool:
-        return self.color_turn == "black" and self.__board.three_fold_repetition()
+        return self.color_turn == "black" and self.board.three_fold_repetition()
 
     def remove_piece(self, coordinate: tuple) -> Piece:
-        return self.__board.remove_piece(coordinate)
+        return self.board.remove_piece(coordinate)
 
     def available_move_options(self, coordinate: tuple, ignore_color: bool = False, option: int = 0, same_color: bool = False, consider_castle: bool = True) -> list:
         """
@@ -679,7 +734,7 @@ class Move:
         """
         if not self.__can_move(coordinate) and not ignore_color:
             return []
-        piece = self.__board.get_piece(coordinate)
+        piece = self.board.get_piece(coordinate)
         if piece.piece_type == "p":
             return self.__move_pawn_options(coordinate, same_color)[option]
         elif piece.piece_type == "k":
@@ -698,13 +753,13 @@ class Move:
         Moves the piece that is on `coordinates` to `new_coordinates` if
         possible.
         """
-        self.__draw_temp = self.__draw
-        self.passant_temp = self.passant
+        self.__is_draw_temp = self.__is_draw
+        self.en_passant_coordinate_temp_2 = self.en_passant_coordinate
         moves = dict()
-        if new_coordinate in self.available_move_options(coordinate) and not self.draw:
+        if new_coordinate in self.available_move_options(coordinate) and not self.is_draw:
             if self.check():
                 if new_coordinate in self.check_options(coordinate) and new_coordinate not in self.moves_that_place_king_in_check(coordinate):
-                    self.__board.update_piece_position(coordinate, new_coordinate)
+                    self.board.update_piece_position(coordinate, new_coordinate)
                     moves[coordinate] = new_coordinate
                 else:
                     raise CantMoveError("Piece cannot move")
@@ -716,17 +771,17 @@ class Move:
                 self.__promote(coordinate, new_coordinate)
                 moves[coordinate] = new_coordinate
             else:
-                if self.passant:
-                    self.__board.remove_piece(self.passant)
-                    self.passant_coordinate = self.passant
-                    self.is_passant = True
-                    self.passant = None
-                self.__board.update_piece_position(coordinate, new_coordinate)
+                if self.en_passant_coordinate:
+                    self.board.remove_piece(self.en_passant_coordinate)
+                    self.en_passant_coordinate_temp_1 = self.en_passant_coordinate
+                    self.last_move_was_en_passant = True
+                    self.en_passant_coordinate = None
+                self.board.update_piece_position(coordinate, new_coordinate)
                 moves[coordinate] = new_coordinate
 
-            self.__set_attacked = False
+            self.__attacked_pieces_were_set = False
             self.set_attacked_pieces()
-            self.__set_attacked = True
+            self.__attacked_pieces_were_set = True
             if self.color_turn == "white":
                 self.color_turn = "black"
             else:
@@ -739,11 +794,12 @@ class Move:
         moves = list()
         for i in range(8):
             for j in range(8):
-                if self.__board.is_piece((i, j)):
-                    piece = self.__board.get_piece((i, j))
+                if self.board.is_piece((i, j)):
+                    piece = self.board.get_piece((i, j))
                     if self.color_turn == piece.piece_color:
-                        if len(self.available_move_options((i, j))):
-                            moves.append({(i, j): self.available_move_options((i, j))})
+                        available_moves = self.available_move_options((i, j))
+                        if len(available_moves):
+                            moves.append({(i, j): available_moves})
         return moves
 
     def undo_move(self) -> None:
@@ -759,11 +815,11 @@ class Move:
                 self.board.place_piece(coordinate, piece)
         del self.board.all_positions[len(self.board.all_positions) - 1]
 
-        self.__draw = self.__draw_temp
-        self.passant = self.passant_temp
-        self.__set_attacked = False
+        self.__is_draw = self.__is_draw_temp
+        self.en_passant_coordinate = self.en_passant_coordinate_temp_2
+        self.__attacked_pieces_were_set = False
         self.set_attacked_pieces()
-        self.__set_attacked = True
+        self.__attacked_pieces_were_set = True
         if self.color_turn == "white":
             self.color_turn = "black"
         else:

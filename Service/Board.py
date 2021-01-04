@@ -36,21 +36,14 @@ class Board:
             for j in range(8):
                 if self.is_piece((i, j)):
                     position.append((self.get_piece((i, j)), (i, j)))
-                else:
-                    position.append((None, None))
         self.__all_positions.append(position)
 
     def equal_positions(self, position1: list, position2: list) -> bool:
         if len(position1) != len(position2):
             return False
         for i in range(len(position1)):
-            if position1[i][0] is None and position2[i][0] is not None:
+            if position1[i][0].is_not_equal(position2[i][0]) or position1[i][1] != position2[i][1]:
                 return False
-            if position2[i][0] is None and position1[i][0] is not None:
-                return False
-            if position1[i][0] is not None and position2[i][0] is not None:
-                if position1[i][0].is_not_equal(position2[i][0]):
-                    return False
         return True
 
     def three_fold_repetition(self) -> bool:
@@ -64,30 +57,20 @@ class Board:
 
     def get_path(self, coordinate1: tuple, coordinate2: tuple) -> list:
         path = list()
+        i_min = min(coordinate1[0], coordinate2[0])
+        j_min = min(coordinate1[1], coordinate2[1])
+        i_max = max(coordinate1[0], coordinate2[0])
+        j_max = max(coordinate1[1], coordinate2[1])
         if coordinate1[0] + coordinate1[1] == coordinate2[0] + coordinate2[1]:
-            i_max = max(coordinate1[0], coordinate2[0])
-            j_max = max(coordinate1[1], coordinate2[1])
-            for i in range(8):
-                for j in range(8):
-                    if i + j == coordinate1[0] + coordinate1[1] and i < i_max and j < j_max:
-                        path.append((i, j))
+            for i in range(i_min + 1, i_max):
+                path.append((i, j_max - i + i_min))
         elif coordinate1[0] - coordinate2[0] == coordinate1[1] - coordinate2[1]:
-            i_min = min(coordinate1[0], coordinate2[0])
-            j_min = min(coordinate1[1], coordinate2[1])
-            i_max = max(coordinate1[0], coordinate2[0])
-            j_max = max(coordinate1[1], coordinate2[1])
-            for i in range(8):
-                for j in range(8):
-                    if abs(i - j) == abs(coordinate1[0] - coordinate1[1]) and i_min < i < i_max and j_min < j < j_max:
-                        path.append((i, j))
+            for i in range(i_min + 1, i_max):
+                path.append((i, j_min + i - i_min))
         elif coordinate1[0] == coordinate2[0]:
-            j_min = min(coordinate1[1], coordinate2[1])
-            j_max = max(coordinate1[1], coordinate2[1])
             for j in range(j_min + 1, j_max):
                 path.append((coordinate1[0], j))
         elif coordinate1[1] == coordinate2[1]:
-            i_min = min(coordinate1[0], coordinate2[0])
-            i_max = max(coordinate1[0], coordinate2[0])
             for i in range(i_min + 1, i_max):
                 path.append((i, coordinate1[1]))
         return path
@@ -96,10 +79,14 @@ class Board:
         pieces = list()
         for i in range(8):
             for j in range(8):
-                piece = self.get_piece((i, j))
-                if piece.piece_color == color:
-                    pieces.append(piece)
+                if self.is_piece((i, j)):
+                    piece = self.get_piece((i, j))
+                    if piece.piece_color == color:
+                        pieces.append(piece)
         return pieces
+
+    def get_all_pieces(self) -> list:
+        return self.get_pieces("white") + self.get_pieces("black")
 
     def __str__(self) -> str:
         board = ""

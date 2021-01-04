@@ -43,10 +43,10 @@ class BoardRepository:
         x, y = coordinate
         if not 0 <= x <= 7 or not 0 <= y <= 7:
             raise IndexError
-        for square in self.squares.values():
-            if square.coordinate == coordinate:
-                return square.piece
-        raise PieceNotFoundError("No piece at position {}".format(coordinate))
+        try:
+            return self.__squares[coordinate].piece
+        except KeyError:
+            raise PieceNotFoundError("No piece at position {}".format(coordinate))
 
     def remove_piece(self, coordinate: tuple) -> Piece:
         x, y = coordinate

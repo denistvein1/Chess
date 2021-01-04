@@ -1,8 +1,11 @@
+import random
+
 from Domain.Piece import Piece
 from Move import Move, CantMoveError
 
 
 class ChessAI:
+
     def __init__(self, move: Move):
         self.__move = move
 
@@ -78,6 +81,7 @@ class ChessAI:
 
     def minimax_root(self, depth, is_maximizing):
         possible_moves = self.__move.get_all_legal_moves()
+        random.shuffle(possible_moves)
         best_move = -9999
         best_move_final = None
         for move in possible_moves:
@@ -93,4 +97,6 @@ class ChessAI:
                         best_move_final = {coordinate: new_coordinate}
                 except CantMoveError:
                     pass
+                # except PlacePieceError:
+                #     pass
         return best_move_final

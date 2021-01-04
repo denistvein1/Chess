@@ -1,3 +1,4 @@
+import timeit
 from tkinter import *
 from tkinter import messagebox
 
@@ -85,8 +86,14 @@ class StartGUI(GUI):
         self.main_move_function_ai()
 
     def main_move_function_ai(self):
+        t1 = timeit.default_timer()
         move = self.__chess_ai.minimax_root(1, True)
-        self._move.move(list(move.keys())[0], list(move.values())[0])
+        t2 = timeit.default_timer()
+        print(t2 - t1)
+        try:
+            self._move.move(list(move.keys())[0], list(move.values())[0])
+        except AttributeError:
+            return
         self.update_square(move)
         self.remove_check()
         self.check()
@@ -136,13 +143,13 @@ class StartGUI(GUI):
         piece_type, piece_number = self.check_promotion(new_square, piece_type, piece_color, piece_number)
         new_coordinate = Helper.get_gui_coordinate_by_square_name(new_square)
 
-        if self._move.is_passant:
-            passant_square = Helper.square_coordinate_to_name(self._move.passant_coordinate)
+        if self._move.last_move_was_en_passant:
+            passant_square = Helper.square_coordinate_to_name(self._move.en_passant_coordinate_temp_1)
             self.widgets["game_canvas"].delete(self.__active_images[passant_square])
             self.__active_images[passant_square] = None
             self._square_type_color_number[passant_square] = None, None, None
-            self._move.is_passant = False
-            self._move.passant_coordinate = None
+            self._move.last_move_was_en_passant = False
+            self._move.en_passant_coordinate_temp_1 = None
 
         self.widgets["game_canvas"].delete(self.__active_images[old_square])
         self.widgets["game_canvas"].delete(self.__active_images[new_square])
@@ -155,9 +162,9 @@ class StartGUI(GUI):
         self._square_type_color_number[new_square] = piece_type, piece_color, piece_number
 
     def draw(self) -> None:
-        if not self._move.draw:
+        if not self._move.is_draw:
             self._move.draw_the_game()
-            if self._move.draw:
+            if self._move.is_draw:
                 draw_messagebox = messagebox.showinfo("Draw", "Draw by insufficient material!")
                 Label(self.root, text=draw_messagebox).grid(row=0, column=0)
                 self.root.destroy()
